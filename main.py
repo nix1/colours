@@ -1,13 +1,12 @@
 from __future__ import division
 import utils
 import csv
+import sys
+import os
 
 from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
 import numpy as np
-
-figure = plt.figure()
-axes = figure.add_subplot(111, projection='3d')
 
 
 def rgb_string_to_denormalized_hls(row):
@@ -16,7 +15,7 @@ def rgb_string_to_denormalized_hls(row):
     g = int(rgb[2] + rgb[3], 16)
     b = int(rgb[4] + rgb[5], 16)
     hls = utils.rgb_to_hls(r, g, b)
-    return hls[0] * 360, hls[1] * 100, hls[2] * 100
+    return hls[0], hls[1], hls[2]
 
 
 def processFile(filename, **kwargs):
@@ -27,19 +26,25 @@ def processFile(filename, **kwargs):
                 hls = rgb_string_to_denormalized_hls(row)
             except IndexError:
                 continue
-
             # print "%s\t%s\t%s" % (hls[0], hls[1], hls[2])
-            axes.scatter(hls[0], hls[1], hls[2], **kwargs)
+            yield hls
 
 
-processFile('colours/azzurro.csv', c='r')
-processFile('colours/lazurowy.csv', c='b')
+if __name__ == '__main__':
+    file1 = sys.argv[1]
+    file2 = sys.argv[2]
+    figure = plt.figure()
+    axes = figure.add_subplot(111, projection='3d')
 
-axes.set_xlabel('Hue')
-axes.set_xlim3d(0, 360)
-axes.set_ylabel('Lightness')
-axes.set_ylim3d(0, 100)
-axes.set_zlabel('Saturation')
-axes.set_zlim3d(0, 100)
+    for file, color in [(file1, 'r'), (file2, 'b')]:
+        for hls in processFile(file):
+            axes.scatter(hls[0], hls[1], hls[2], c=color)
 
-plt.show()
+    axes.set_xlabel('Hue')
+    axes.set_xlim3d(0, 360)
+    axes.set_ylabel('Lightness')
+    axes.set_ylim3d(0, 100)
+    axes.set_zlabel('Saturation')
+    axes.set_zlim3d(0, 100)
+
+    plt.show()
