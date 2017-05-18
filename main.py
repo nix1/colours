@@ -3,6 +3,8 @@ import utils
 import csv
 import sys
 import os
+import operator
+import math
 
 from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
@@ -14,8 +16,8 @@ def rgb_string_to_denormalized_hls(row):
     r = int(rgb[0] + rgb[1], 16)
     g = int(rgb[2] + rgb[3], 16)
     b = int(rgb[4] + rgb[5], 16)
-    hls = utils.rgb_to_hls(r, g, b)
-    return hls[0], hls[1], hls[2]
+    h, l, s = utils.rgb_to_hls(r, g, b)
+    return h, l, s
 
 
 def processFile(filename, **kwargs):
@@ -36,9 +38,40 @@ if __name__ == '__main__':
     figure = plt.figure()
     axes = figure.add_subplot(111, projection='3d')
 
-    for file, color in [(file1, 'r'), (file2, 'b')]:
-        for hls in processFile(file):
-            axes.scatter(hls[0], hls[1], hls[2], c=color)
+    for file, series_color in [(file1, 'r'), (file2, 'b')]:
+        hls_averages = [0, 0, 0]
+        hls_count = 0
+
+        # first pass - calculate sums
+        for h, l, s in processFile(file):
+            hls_averages = map(operator.add, hls_averages, (h, l, s))
+            hls_count += 1
+
+        # convert them to averages
+        hls_averages = map(operator.truediv, hls_averages, [hls_count]*3)
+
+        # second pass - calculate the standard deviations and draw the scatterplot
+        deviations_acc = [0, 0, 0]
+        for h, l, s in processFile(file):
+            diffs = map(operator.sub, hls_averages, (h, l, s))
+            # square them
+            diffs2 = map(operator.mul, diffs, diffs)
+            # add to the acc
+            deviations_acc = map(operator.add, deviations_acc, diffs2)
+            axes.scatter(h, l, s, c=series_color)
+
+        # variances
+        deviations_acc = map(operator.truediv, deviations_acc, [hls_count] * 3)
+
+        # deviations
+        deviations_acc = map(math.sqrt, deviations_acc)
+
+        # round it a bit
+        hls_averages = map(round, hls_averages, [2]*3)
+        deviations_acc = map(round, deviations_acc, [2]*3)
+
+        print file, hls_averages, deviations_acc
+
 
     axes.set_xlabel('Hue')
     axes.set_xlim3d(0, 360)
