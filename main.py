@@ -1,4 +1,4 @@
-from __future__ import division
+from __future__ import division, print_function
 import utils
 import csv
 import sys
@@ -33,12 +33,12 @@ def processFile(filename, **kwargs):
 
 
 if __name__ == '__main__':
-    file1 = sys.argv[1]
-    file2 = sys.argv[2]
+    files = sys.argv[1:]
     figure = plt.figure()
     axes = figure.add_subplot(111, projection='3d')
 
-    for file, series_color in [(file1, 'r'), (file2, 'b')]:
+    for idx, file in enumerate(files):
+        series_color = 'r' if idx % 2 == 0 else 'b'
         hls_averages = [0, 0, 0]
         hls_count = 0
 
@@ -70,7 +70,11 @@ if __name__ == '__main__':
         hls_averages = map(round, hls_averages, [2]*3)
         deviations_acc = map(round, deviations_acc, [2]*3)
 
-        print file, hls_averages, deviations_acc
+        print(os.path.splitext(os.path.basename(file))[0], # filename without extension
+              hls_averages[0], deviations_acc[0], # hue
+              hls_averages[1], deviations_acc[1], # lightness
+              hls_averages[2], deviations_acc[2], # saturation
+              sep='\t')
 
 
     axes.set_xlabel('Hue')
