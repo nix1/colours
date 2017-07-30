@@ -23,16 +23,27 @@ def rgb_string_to_denormalized_hls(row):
 def processFile(filename, **kwargs):
     with open(filename, 'r') as csvfile:
         reader = csv.reader(csvfile)
+        print()
+        print(color_name_from_filename(filename))
+        print()
         for row in reader:
             try:
                 hls = rgb_string_to_denormalized_hls(row)
             except IndexError:
+                print("")
                 continue
-            # print "%s\t%s\t%s" % (hls[0], hls[1], hls[2])
+            print("%s\t%s\t%s" % (hls[0], hls[1], hls[2]))
             yield hls
 
 
+def color_name_from_filename(path):
+    return os.path.splitext(os.path.basename(path))[0]
+
 if __name__ == '__main__':
+    """
+    Example usage:
+    python main.py /path/to/data/series1.csv [/path/do/data/series2.csv]
+    """
     files = sys.argv[1:]
     figure = plt.figure()
     axes = figure.add_subplot(111, projection='3d')
@@ -42,38 +53,22 @@ if __name__ == '__main__':
         hls_averages = [0, 0, 0]
         hls_count = 0
 
-        # first pass - calculate sums
+        # calculate sums and draw the scatterplot
         for h, l, s in processFile(file):
             hls_averages = map(operator.add, hls_averages, (h, l, s))
+            axes.scatter(h, l, s, c=series_color)
             hls_count += 1
 
-        # convert them to averages
+        # convert sums to averages
         hls_averages = map(operator.truediv, hls_averages, [hls_count]*3)
-
-        # second pass - calculate the standard deviations and draw the scatterplot
-        deviations_acc = [0, 0, 0]
-        for h, l, s in processFile(file):
-            diffs = map(operator.sub, hls_averages, (h, l, s))
-            # square them
-            diffs2 = map(operator.mul, diffs, diffs)
-            # add to the acc
-            deviations_acc = map(operator.add, deviations_acc, diffs2)
-            axes.scatter(h, l, s, c=series_color)
-
-        # variances
-        deviations_acc = map(operator.truediv, deviations_acc, [hls_count] * 3)
-
-        # deviations
-        deviations_acc = map(math.sqrt, deviations_acc)
 
         # round it a bit
         hls_averages = map(round, hls_averages, [2]*3)
-        deviations_acc = map(round, deviations_acc, [2]*3)
 
-        print(os.path.splitext(os.path.basename(file))[0], # filename without extension
-              hls_averages[0], deviations_acc[0], # hue
-              hls_averages[1], deviations_acc[1], # lightness
-              hls_averages[2], deviations_acc[2], # saturation
+        print(color_name_from_filename(file),  # filename without extension
+              hls_averages[0],  # hue
+              hls_averages[1],  # lightness
+              hls_averages[2],  # saturation
               sep='\t')
 
 
